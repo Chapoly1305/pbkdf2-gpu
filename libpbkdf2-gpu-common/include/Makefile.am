@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # ---------------------------------------------------------------------
 
-noinst_HEADERS = \
+nobase_include_HEADERS = \
     libpbkdf2-gpu-common/alignment.h \
     libpbkdf2-gpu-common/endianness.h \
     libpbkdf2-gpu-common/logging.h
