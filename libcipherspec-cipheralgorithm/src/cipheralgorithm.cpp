@@ -40,19 +40,34 @@ void CipherAlgorithm::EncryptionContex::encrypt(
     if (dataLength > INT_MAX) {
         throw CipherException("dataLength too large!");
     }
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    EVP_CIPHER_CTX_set_padding(&ctx, 0);
-    if (EVP_EncryptInit(&ctx, algorithm->cipher, (const unsigned char *)key, (const unsigned char *)iv) != 1) {
-        EVP_CIPHER_CTX_cleanup(&ctx);
-        throw CipherException("OpenSSL error!");
+    
+    // Create a new context using the appropriate OpenSSL function
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (ctx == nullptr) {
+        throw CipherException("Failed to create EVP_CIPHER_CTX");
     }
+    
+    // Set padding to 0 (no padding)
+    if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("Failed to set padding");
+    }
+    
+    // Initialize encryption
+    if (EVP_EncryptInit(ctx, algorithm->cipher, (const unsigned char *)key, (const unsigned char *)iv) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("OpenSSL error: Failed to initialize encryption");
+    }
+    
     int outl;
-    if (EVP_EncryptUpdate(&ctx, (unsigned char *)dest, &outl, (const unsigned char *)data, (int)dataLength) != 1) {
-        EVP_CIPHER_CTX_cleanup(&ctx);
-        throw CipherException("OpenSSL error!");
+    // Perform encryption
+    if (EVP_EncryptUpdate(ctx, (unsigned char *)dest, &outl, (const unsigned char *)data, (int)dataLength) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("OpenSSL error: Failed to encrypt data");
     }
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    
+    // Free the context
+    EVP_CIPHER_CTX_free(ctx);
 }
 
 CipherAlgorithm::DecryptionContex::DecryptionContex(
@@ -71,32 +86,49 @@ void CipherAlgorithm::DecryptionContex::decrypt(
     if (dataLength > INT_MAX) {
         throw std::runtime_error("dataLength too large!");
     }
-    EVP_CIPHER_CTX ctx;
-    EVP_CIPHER_CTX_init(&ctx);
-    EVP_CIPHER_CTX_set_padding(&ctx, 0);
-    if (EVP_DecryptInit(&ctx, algorithm->cipher, (const unsigned char *)key, (const unsigned char *)iv) != 1) {
-        EVP_CIPHER_CTX_cleanup(&ctx);
-        throw CipherException("OpenSSL error!");
+    
+    // Create a new context using the appropriate OpenSSL function
+    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    if (ctx == nullptr) {
+        throw CipherException("Failed to create EVP_CIPHER_CTX");
     }
+    
+    // Set padding to 0 (no padding)
+    if (EVP_CIPHER_CTX_set_padding(ctx, 0) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("Failed to set padding");
+    }
+    
+    // Initialize decryption
+    if (EVP_DecryptInit(ctx, algorithm->cipher, (const unsigned char *)key, (const unsigned char *)iv) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("OpenSSL error: Failed to initialize decryption");
+    }
+    
     int outl;
-    if (EVP_DecryptUpdate(&ctx, (unsigned char *)dest, &outl, (const unsigned char *)data, (int)dataLength) != 1) {
-        EVP_CIPHER_CTX_cleanup(&ctx);
-        throw CipherException("OpenSSL error!");
+    // Perform decryption
+    if (EVP_DecryptUpdate(ctx, (unsigned char *)dest, &outl, (const unsigned char *)data, (int)dataLength) != 1) {
+        EVP_CIPHER_CTX_free(ctx);
+        throw CipherException("OpenSSL error: Failed to decrypt data");
     }
-    EVP_CIPHER_CTX_cleanup(&ctx);
+    
+    // Free the context
+    EVP_CIPHER_CTX_free(ctx);
 }
 
 std::size_t CipherAlgorithm::getKeySize() const
 {
-    return (std::size_t)::EVP_CIPHER_key_length(cipher);
+    return (std::size_t)::EVP_CIPHER_get_key_length(cipher);
 }
+
 std::size_t CipherAlgorithm::getBlockLength() const
 {
-    return (std::size_t)::EVP_CIPHER_block_size(cipher);
+    return (std::size_t)::EVP_CIPHER_get_block_size(cipher);
 }
+
 std::size_t CipherAlgorithm::getIVLength() const
 {
-    return (std::size_t)::EVP_CIPHER_iv_length(cipher);
+    return (std::size_t)::EVP_CIPHER_get_iv_length(cipher);
 }
 
 const CipherAlgorithm &CipherAlgorithm::getAlgorithm(
