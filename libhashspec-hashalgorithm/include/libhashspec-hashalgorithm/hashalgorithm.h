@@ -49,7 +49,7 @@ public:
     class Context
     {
     private:
-        ::EVP_MD_CTX ctx;
+        ::EVP_MD_CTX *ctx;
 
     public:
         Context(const HashAlgorithm &hashAlg);

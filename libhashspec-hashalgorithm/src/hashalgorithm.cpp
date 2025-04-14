@@ -28,24 +28,36 @@ using namespace libhashspec::openssl;
 
 HashAlgorithm::Context::Context(const HashAlgorithm &hashAlg)
 {
-    EVP_MD_CTX_init(&ctx);
-    EVP_DigestInit(&ctx, hashAlg.digest);
+    // Create a new context using the appropriate OpenSSL function
+    ctx = EVP_MD_CTX_new();  // Use new() instead of direct initialization
+    if (ctx == nullptr) {
+        throw HashException("Failed to create EVP_MD_CTX");
+    }
+    if (EVP_DigestInit(ctx, hashAlg.digest) != 1) {
+        EVP_MD_CTX_free(ctx);  // Free on error
+        throw HashException("Failed to initialize digest");
+    }
 }
 
 HashAlgorithm::Context::~Context()
 {
-    EVP_MD_CTX_cleanup(&ctx);
+    // Free the context using the appropriate OpenSSL function
+    EVP_MD_CTX_free(ctx);  // Replace EVP_MD_CTX_cleanup
 }
 
+// Update other methods to use the pointer directly (no &)
 void HashAlgorithm::Context::update(const void *data, std::size_t size)
 {
-    EVP_DigestUpdate(&ctx, data, size);
+    if (EVP_DigestUpdate(ctx, data, size) != 1) {
+        throw HashException("Failed to update digest");
+    }
 }
 
 void HashAlgorithm::Context::digest(void *dest)
 {
-    /* the digest size will be guarenteed to match the output block length: */
-    EVP_DigestFinal(&ctx, (unsigned char *)dest, NULL);
+    if (EVP_DigestFinal(ctx, (unsigned char *)dest, NULL) != 1) {
+        throw HashException("Failed to finalize digest");
+    }
 }
 
 std::size_t HashAlgorithm::getInputBlockLength() const
