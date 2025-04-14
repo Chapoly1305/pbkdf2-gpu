@@ -81,19 +81,28 @@ RunTimeStatistics runBenchmark(
 
     DummyPasswordGenerator pwgen;
     RunTimeStatistics compTimeStats(iterationCount, batchSize);
-    for (std::size_t i = 0; i < sampleCount; i++) {
+
+    for (std::size_t sample = 0; sample < sampleCount; sample++) {
         if (beVerbose) {
-            std::cout << "  Sample " << i << "..." << std::endl;
+            std::cout << "  Sample " << sample << "..." << std::endl;
+        }
+
+        // Generate initial random password once per outer loop
+        std::vector<unsigned char> password(PASSWORD_LENGTH);
+        for (auto &c : password) {
+            c = static_cast<unsigned char>(rand() % 256);
         }
 
         clock_type::time_point checkpt0 = clock_type::now();
         {
             typename Types::TProcessingUnit::PasswordWriter writer(unit);
             for (std::size_t i = 0; i < batchSize; i++) {
-                const char *pw;
-                std::size_t pwLength;
-                pwgen(pw, pwLength);
-                writer.setPassword(pw, pwLength);
+                writer.setPassword(reinterpret_cast<const char*>(password.data()), password.size());
+
+                // Increment password by 1 for the next iteration
+                for (int idx = PASSWORD_LENGTH - 1; idx >= 0; --idx) {
+                    if (++password[idx] != 0) break; // handle byte overflow
+                }
 
                 writer.moveForward(1);
             }
