@@ -19,7 +19,7 @@
 
 #include "libpbkdf2-gpu-common/alignment.h"
 #include "hashfunctionhelper.h"
-
+#include <unistd.h>
 #include <cstring>
 
 #define DEBUG_BUFFER_SIZE 4
@@ -184,7 +184,33 @@ void ProcessingUnit::beginProcessing()
 void ProcessingUnit::endProcessing()
 {
     *logger << "Waiting for processing to end..." << std::endl;
-    event.wait();
+    
+    // Use a hybrid approach - first poll a few times for low-latency cases
+    const int MAX_QUICK_POLLS = 10;
+    cl_int status;
+    
+    // Try quick polling first for low-latency operations
+    for (int i = 0; i < MAX_QUICK_POLLS; i++) {
+        status = event.getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>();
+        if (status == CL_COMPLETE) {
+            *logger << "Processing ended (fast path)." << std::endl;
+            event = cl::Event();
+            return;
+        }
+    }
+    
+    // For longer operations, use a sleep-based approach
+    while (true) {
+        status = event.getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>();
+        if (status == CL_COMPLETE) {
+            break;
+        }
+        
+        // Sleep for a short period to reduce CPU usage
+        // 1ms is a good compromise between responsiveness and CPU usage
+        usleep(1000);
+    }
+    
     *logger << "Processing ended." << std::endl;
     if (profilingEnabled) {
         //*logger << event.getProfilingInfo<CL_PROFILING_COMMAND_QUEUED>() << std::endl;
