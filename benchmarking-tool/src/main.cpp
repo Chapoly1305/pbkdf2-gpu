@@ -37,12 +37,12 @@ struct Arguments
     std::size_t deviceIndex = 0;
 
     std::string outputType = "iters-per-sec";
-    std::string outputMode = "verbose";
+    std::string outputMode = "mean";
 
-    std::string hashSpec = "sha1";
+    std::string hashSpec = "sha256";
     std::string salt = "saltSALTsaltSALTsaltSALTsaltSALTsalt";
-    std::size_t iterations = 4096;
-    std::size_t dkLength = 20;
+    std::size_t iterations = 1000;
+    std::size_t dkLength = 40;
     std::size_t batchSize = 2048;
     std::size_t sampleCount = 10;
 };

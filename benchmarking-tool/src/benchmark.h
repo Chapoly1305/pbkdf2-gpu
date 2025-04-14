@@ -28,7 +28,7 @@
 #include <random>
 #include <iostream>
 
-#define PASSWORD_LENGTH 64
+#define PASSWORD_LENGTH 4
 
 /**
  * @brief A dummy password generator.
